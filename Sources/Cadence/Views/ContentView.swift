@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: Hashable {
+    case home
     case goal(UUID)
     case tracking
     case settings
@@ -9,12 +10,15 @@ enum SidebarItem: Hashable {
 struct ContentView: View {
     @EnvironmentObject var store: Store
     @EnvironmentObject var tracker: Tracker
-    @State private var selection: SidebarItem? = .tracking
+    @State private var selection: SidebarItem? = .home
     @State private var showingNewGoal = false
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
+                Label("Home", systemImage: "circle.grid.3x3.fill")
+                    .tag(SidebarItem.home)
+
                 Section("Goals") {
                     ForEach(store.data.goals) { goal in
                         Label {
@@ -54,6 +58,8 @@ struct ContentView: View {
             }
         } detail: {
             switch selection {
+            case .home:
+                HomeView()
             case .goal(let id):
                 if let goal = store.data.goals.first(where: { $0.id == id }) {
                     GoalDetailView(goal: goal)
