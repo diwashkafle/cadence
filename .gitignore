@@ -1,0 +1,14 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Built app bundle (regenerate with ./build.sh)
+Cadence.app/
+
+# macOS
+.DS_Store
+
+# Editor
+*.xcuserstate
+*.swp
