@@ -39,5 +39,12 @@ echo "==> Ad-hoc code signing (so permissions persist)…"
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || \
     echo "   (codesign skipped — app still runs, but TCC grants may re-prompt)"
 
+# Keep the installed copy in sync if it already exists in /Applications.
+if [ -d "/Applications/$APP" ]; then
+    echo "==> Updating /Applications/$APP…"
+    rm -rf "/Applications/$APP"
+    cp -R "$APP" "/Applications/$APP"
+fi
+
 echo "==> Done: $(pwd)/$APP"
-echo "    Run it with:  open $APP"
+echo "    Run it from Spotlight (type \"Cadence\") or:  open $APP"
