@@ -42,9 +42,20 @@ final class Store: ObservableObject {
     func addWork(seconds: Int, label: String, category: Category, on date: Date = Date()) {
         let key = date.dayKey
         var log = data.logs[key] ?? DayLog()
-        if category == .work { log.work += seconds } else { log.entertainment += seconds }
+        if category == .work {
+            log.work += seconds
+            let hour = Calendar.current.component(.hour, from: date)
+            log.hours[String(hour), default: 0] += seconds
+        } else {
+            log.entertainment += seconds
+        }
         log.apps[label, default: 0] += seconds
         data.logs[key] = log
+    }
+
+    /// Work seconds logged in a specific hour (0–23) of a day.
+    func workSeconds(on date: Date, hour: Int) -> Int {
+        data.logs[date.dayKey]?.hours[String(hour)] ?? 0
     }
 
     /// Work seconds for a day (drives the heatmap and goal stats).

@@ -52,11 +52,12 @@ struct Goal: Codable, Identifiable, Hashable {
 struct DayLog: Codable {
     var work: Int = 0
     var entertainment: Int = 0
-    var apps: [String: Int] = [:]   // label (app name or domain) -> seconds
+    var apps: [String: Int] = [:]    // label (app name or domain) -> seconds
+    var hours: [String: Int] = [:]   // hour "0".."23" -> work seconds
 
     init() {}
 
-    enum CodingKeys: String, CodingKey { case work, entertainment, apps, seconds }
+    enum CodingKeys: String, CodingKey { case work, entertainment, apps, hours, seconds }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -65,6 +66,7 @@ struct DayLog: Codable {
             ?? (try? c.decode(Int.self, forKey: .seconds)) ?? 0
         entertainment = (try? c.decode(Int.self, forKey: .entertainment)) ?? 0
         apps = (try? c.decode([String: Int].self, forKey: .apps)) ?? [:]
+        hours = (try? c.decode([String: Int].self, forKey: .hours)) ?? [:]
     }
 
     func encode(to encoder: Encoder) throws {
@@ -72,6 +74,7 @@ struct DayLog: Codable {
         try c.encode(work, forKey: .work)
         try c.encode(entertainment, forKey: .entertainment)
         try c.encode(apps, forKey: .apps)
+        try c.encode(hours, forKey: .hours)
     }
 
     func seconds(for category: Category) -> Int {
