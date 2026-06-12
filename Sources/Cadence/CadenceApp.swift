@@ -14,23 +14,56 @@ struct CadenceApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(tracker)
                 .frame(minWidth: 820, minHeight: 540)
         }
         .windowResizability(.contentMinSize)
+
+        // Lives in the menu bar so tracking continues with the window closed.
+        MenuBarExtra("Cadence", systemImage: tracker.isWorking ? "record.circle" : "pause.circle") {
+            MenuBarContent()
+                .environmentObject(store)
+                .environmentObject(tracker)
+        }
     }
 }
 
-/// Saves on quit and keeps the app as a normal windowed app.
+struct MenuBarContent: View {
+    @EnvironmentObject var store: Store
+    @EnvironmentObject var tracker: Tracker
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Text(tracker.status)
+        Text("Today: \(hours(store.seconds(on: Date()))) work")
+        Divider()
+        Toggle("Track activity", isOn: $tracker.isWorking)
+        Button("Open Cadence") {
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        Divider()
+        Button("Quit Cadence") { NSApp.terminate(nil) }
+    }
+
+    private func hours(_ seconds: Int) -> String {
+        let h = Double(seconds) / 3600
+        if h >= 1 { return String(format: "%.1fh", h) }
+        return "\(seconds / 60)m"
+    }
+}
+
+/// Keeps the app alive when the window closes (tracking continues from the
+/// menu bar) and brings the window back when the Dock icon is clicked.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+        false
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Combine
 
 /// Single source of truth. Holds all persisted data and writes it to
@@ -23,6 +24,14 @@ final class Store: ObservableObject {
             data = decoded
         } else {
             data = AppData()
+        }
+
+        // Flush any pending debounced save before the app exits.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.saveNow()
         }
     }
 

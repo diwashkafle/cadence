@@ -141,4 +141,23 @@ struct AppData: Codable {
     var trackedApps: [TrackedApp] = []
     var trackedSites: [TrackedSite] = []
     var idleThreshold: Int = 120              // seconds of no input before pausing
+    var autoTrack: Bool = true                // tracking resumes on launch
+
+    enum CodingKeys: String, CodingKey {
+        case goals, logs, trackedApps, trackedSites, idleThreshold, autoTrack
+    }
+
+    init() {}
+
+    // Tolerant decoding: a missing or malformed field never nukes the rest
+    // of the file — new fields just take their defaults.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        goals = (try? c.decode([Goal].self, forKey: .goals)) ?? []
+        logs = (try? c.decode([String: DayLog].self, forKey: .logs)) ?? [:]
+        trackedApps = (try? c.decode([TrackedApp].self, forKey: .trackedApps)) ?? []
+        trackedSites = (try? c.decode([TrackedSite].self, forKey: .trackedSites)) ?? []
+        idleThreshold = (try? c.decode(Int.self, forKey: .idleThreshold)) ?? 120
+        autoTrack = (try? c.decode(Bool.self, forKey: .autoTrack)) ?? true
+    }
 }

@@ -7,7 +7,11 @@ import Combine
 /// store if the active app — or the active browser tab's website — is tracked.
 final class Tracker: ObservableObject {
     @Published var isWorking = false {
-        didSet { isWorking ? start() : stop() }
+        didSet {
+            guard isWorking != oldValue else { return }
+            store.data.autoTrack = isWorking   // remember across launches
+            isWorking ? start() : stop()
+        }
     }
     /// Human-readable description of what's happening right now.
     @Published var status = "Idle"
@@ -32,6 +36,9 @@ final class Tracker: ObservableObject {
 
     init(store: Store) {
         self.store = store
+        // `defer` makes the didSet fire, so tracking starts immediately at
+        // launch when it was on last time (default: on).
+        defer { if store.data.autoTrack { isWorking = true } }
     }
 
     private func start() {
@@ -110,9 +117,16 @@ final class Tracker: ObservableObject {
     // MARK: System queries
 
     /// Seconds since the last keyboard/mouse input, system-wide.
+    /// Takes the minimum across concrete input event types — `.null` is not
+    /// a real "any event" sentinel and reports astronomical values.
     private func idleSeconds() -> CFTimeInterval {
-        CGEventSource.secondsSinceLastEventType(.combinedSessionState,
-                                                eventType: .null)
+        let types: [CGEventType] = [
+            .mouseMoved, .keyDown, .flagsChanged,
+            .leftMouseDown, .rightMouseDown, .leftMouseDragged, .scrollWheel
+        ]
+        return types
+            .map { CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: $0) }
+            .min() ?? 0
     }
 
     private func host(from urlString: String) -> String? {

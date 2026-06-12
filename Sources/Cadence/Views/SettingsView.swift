@@ -1,11 +1,14 @@
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 struct SettingsView: View {
     @EnvironmentObject var store: Store
     @State private var newSite = ""
     @State private var newSiteCategory: Category = .work
     @State private var runningApps: [TrackedApp] = []
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginError: String?
 
     var body: some View {
         ScrollView {
@@ -88,6 +91,30 @@ struct SettingsView: View {
                         .padding(.vertical, 4).padding(.horizontal, 10)
                         .background(Color.gray.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
                     }
+                }
+
+                Divider()
+
+                // MARK: Startup
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Startup").font(.headline)
+                    Toggle("Start Cadence at login", isOn: $launchAtLogin)
+                        .onChange(of: launchAtLogin) { _, on in
+                            do {
+                                if on { try SMAppService.mainApp.register() }
+                                else { try SMAppService.mainApp.unregister() }
+                                loginError = nil
+                            } catch {
+                                loginError = error.localizedDescription
+                                launchAtLogin = SMAppService.mainApp.status == .enabled
+                            }
+                        }
+                    if let loginError {
+                        Text(loginError).font(.caption).foregroundStyle(.red)
+                    }
+                    Text("Tracking itself starts automatically whenever Cadence launches (turn it off from the menu bar icon).")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Divider()
