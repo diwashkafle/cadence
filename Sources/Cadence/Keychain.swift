@@ -1,12 +1,11 @@
 import Foundation
 import Security
 
-/// Tiny wrapper over the macOS Keychain for a single secret: the Neon URL.
+/// Tiny wrapper over the macOS Keychain for app secrets (e.g. the Data API token).
 enum Keychain {
     private static let service = "com.cadence.app"
-    private static let account = "neon-url"
 
-    static func set(_ value: String?) {
+    static func set(_ value: String?, account: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -19,7 +18,7 @@ enum Keychain {
         SecItemAdd(add as CFDictionary, nil)
     }
 
-    static func get() -> String? {
+    static func get(account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

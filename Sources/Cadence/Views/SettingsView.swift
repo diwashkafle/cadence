@@ -10,7 +10,8 @@ struct SettingsView: View {
     @State private var runningApps: [TrackedApp] = []
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
-    @State private var neonURL = ""
+    @State private var apiURL = ""
+    @State private var apiToken = ""
 
     var body: some View {
         ScrollView {
@@ -24,20 +25,24 @@ struct SettingsView: View {
                         Spacer()
                         statusBadge
                     }
-                    Text("Your data auto-saves locally and pushes to your Neon Postgres database. Paste your connection string — it's stored in the macOS Keychain, never in a file or git.")
+                    Text("Your data auto-saves locally and pushes to Neon via the Data API. Paste the Data API URL and your access token — the token is stored in the macOS Keychain, never in a file or git.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
 
-                    SecureField("postgresql://user:password@…neon.tech/dbname?sslmode=require", text: $neonURL)
+                    TextField("Data API URL — https://…neon.tech", text: $apiURL)
+                        .textFieldStyle(.roundedBorder)
+                    SecureField("Access token (Bearer JWT)", text: $apiToken)
                         .textFieldStyle(.roundedBorder)
                     HStack {
-                        Button("Save connection") {
-                            sync.setConnectionString(neonURL)
+                        Button("Save") {
+                            sync.setBaseURL(apiURL)
+                            if !apiToken.isEmpty { sync.setToken(apiToken) }
+                            apiToken = ""
                         }
-                        .disabled(neonURL.isEmpty)
+                        .disabled(apiURL.isEmpty)
                         Button("Sync now") {
                             Task { await sync.sync() }
                         }
-                        .disabled(sync.syncing || sync.connectionString == nil)
+                        .disabled(sync.syncing || !sync.isConfigured)
                         if sync.syncing { ProgressView().controlSize(.small) }
                         Spacer()
                     }
@@ -179,13 +184,16 @@ struct SettingsView: View {
             .padding(28)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onAppear { runningApps = currentRunningApps() }
+        .onAppear {
+            runningApps = currentRunningApps()
+            apiURL = store.data.dataApiURL
+        }
     }
 
     private var statusBadge: some View {
         let color: Color = sync.syncing ? .yellow
             : (sync.lastError != nil ? .red
-            : (sync.connectionString != nil ? Category.work.color : .gray))
+            : (sync.isConfigured ? Category.work.color : .gray))
         return HStack(spacing: 5) {
             Circle().fill(color).frame(width: 8, height: 8)
             Text(sync.status).font(.caption).foregroundStyle(.secondary)
