@@ -12,22 +12,60 @@ final class SyncManager: ObservableObject {
 
     private let store: Store
     private var cancellable: AnyCancellable?
+    private var periodicTimer: Timer?
+    private var lastManualSig: Data?
     private let tokenAccount = "neon-token"
+    private let periodInterval: TimeInterval = 30 * 60   // work tracking cadence
 
     init(store: Store) {
         self.store = store
         refreshStatus()
+        lastManualSig = Self.manualSig(store.data)
 
+        // INSTANT path — routine/manual edits (everything except the per-5s work
+        // logs) push almost immediately. We diff a signature so the constant
+        // work-tracking writes don't trip this.
         cancellable = store.$data
-            .debounce(for: .seconds(15), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .sink { [weak self] data in
                 guard let self, self.store.data.cloudAutoSync, self.isConfigured else { return }
+                let sig = Self.manualSig(data)
+                guard sig != self.lastManualSig else { return }
+                self.lastManualSig = sig
                 Task { await self.sync() }
             }
 
+        // PERIODIC path — work tracking (and everything else) pushes every 30 min.
+        let timer = Timer(timeInterval: periodInterval, repeats: true) { [weak self] _ in
+            guard let self, self.store.data.cloudAutoSync, self.isConfigured else { return }
+            Task { await self.sync() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        periodicTimer = timer
+
+        // Initial push shortly after launch.
         if isConfigured && store.data.cloudAutoSync {
             Task { try? await Task.sleep(nanoseconds: 3_000_000_000); await sync() }
         }
+    }
+
+    /// Signature of the "routine" data (all of it except the work-tracking `logs`
+    /// and the sync bookkeeping). Changes here trigger an instant sync.
+    private static func manualSig(_ d: AppData) -> Data? {
+        struct Snap: Encodable {
+            let goals: [Goal]
+            let trackedApps: [TrackedApp]
+            let trackedSites: [TrackedSite]
+            let body: BodyData
+            let idleThreshold: Int
+            let dataApiURL: String
+            let cloudAutoSync: Bool
+        }
+        let snap = Snap(goals: d.goals, trackedApps: d.trackedApps, trackedSites: d.trackedSites,
+                        body: d.body, idleThreshold: d.idleThreshold,
+                        dataApiURL: d.dataApiURL, cloudAutoSync: d.cloudAutoSync)
+        let enc = JSONEncoder(); enc.outputFormatting = [.sortedKeys]
+        return try? enc.encode(snap)
     }
 
     // MARK: Configuration

@@ -50,6 +50,8 @@ struct SettingsView: View {
                         get: { store.data.cloudAutoSync },
                         set: { store.data.cloudAutoSync = $0 }
                     ))
+                    Text("Routine edits (body, goals, settings) sync instantly. Work tracking syncs every 30 minutes.")
+                        .font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     if let last = store.data.lastSyncedAt {
                         Text("Last synced: \(last.formatted(date: .abbreviated, time: .shortened))")
                             .font(.caption2).foregroundStyle(.secondary)
