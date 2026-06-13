@@ -94,7 +94,12 @@ struct BodyTodayView: View {
                     .frame(width: 80).multilineTextAlignment(.trailing)
                     .textFieldStyle(.roundedBorder)
             }
-            slider("Sleep", \.sleep)
+            HStack {
+                Text("Sleep").frame(width: 70, alignment: .leading)
+                Stepper(value: bind(\.sleepHours), in: 0...14, step: 0.5) {
+                    Text(String(format: "%.1f h", store.bodyCheckIn(key).sleepHours)).monospacedDigit()
+                }
+            }
             slider("Energy", \.energy)
             slider("Mood", \.mood)
             slider("Hunger", \.hunger)

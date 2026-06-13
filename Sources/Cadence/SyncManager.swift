@@ -184,16 +184,16 @@ final class SyncManager: ObservableObject {
         for (day, c) in data.body.checkIns {
             try await conn.query("""
                 INSERT INTO body_checkins
-                  (day, weight, sleep, energy, mood, hunger, acid_reflux, bloating, shoulder_pain,
+                  (day, weight, sleep_hours, energy, mood, hunger, acid_reflux, bloating, shoulder_pain,
                    floor, meals, supplements, exercises, exercise_log, warmup_done, intensity, session_done, updated_at)
                 VALUES
-                  (\(day)::date, \(c.weight), \(c.sleep), \(c.energy), \(c.mood), \(c.hunger),
+                  (\(day)::date, \(c.weight), \(c.sleepHours), \(c.energy), \(c.mood), \(c.hunger),
                    \(c.acidReflux), \(c.bloating), \(c.shoulderPain),
                    \(jsonArray(c.floor))::jsonb, \(jsonIntArray(c.meals))::jsonb, \(jsonArray(c.supplements))::jsonb,
                    \(jsonArray(c.exercises))::jsonb, \(jsonString(c.exerciseLog))::jsonb,
                    \(c.warmupDone), \(c.intensity), \(c.sessionDone), now())
                 ON CONFLICT (day) DO UPDATE SET
-                  weight = EXCLUDED.weight, sleep = EXCLUDED.sleep, energy = EXCLUDED.energy,
+                  weight = EXCLUDED.weight, sleep_hours = EXCLUDED.sleep_hours, energy = EXCLUDED.energy,
                   mood = EXCLUDED.mood, hunger = EXCLUDED.hunger, acid_reflux = EXCLUDED.acid_reflux,
                   bloating = EXCLUDED.bloating, shoulder_pain = EXCLUDED.shoulder_pain,
                   floor = EXCLUDED.floor, meals = EXCLUDED.meals, supplements = EXCLUDED.supplements,
@@ -221,7 +221,7 @@ final class SyncManager: ObservableObject {
             "CREATE TABLE IF NOT EXISTS day_logs (day date PRIMARY KEY, work integer, entertainment integer, apps jsonb, hours jsonb, updated_at timestamptz)",
             "CREATE TABLE IF NOT EXISTS tracked_apps (bundle_id text PRIMARY KEY, name text, category text, updated_at timestamptz)",
             "CREATE TABLE IF NOT EXISTS tracked_sites (host text PRIMARY KEY, category text, updated_at timestamptz)",
-            "CREATE TABLE IF NOT EXISTS body_checkins (day date PRIMARY KEY, weight double precision, sleep integer, energy integer, mood integer, hunger integer, acid_reflux boolean, bloating boolean, shoulder_pain text, floor jsonb, meals jsonb, supplements jsonb, exercises jsonb, exercise_log jsonb, warmup_done boolean, intensity text, session_done boolean, updated_at timestamptz)",
+            "CREATE TABLE IF NOT EXISTS body_checkins (day date PRIMARY KEY, weight double precision, sleep_hours double precision, energy integer, mood integer, hunger integer, acid_reflux boolean, bloating boolean, shoulder_pain text, floor jsonb, meals jsonb, supplements jsonb, exercises jsonb, exercise_log jsonb, warmup_done boolean, intensity text, session_done boolean, updated_at timestamptz)",
             "CREATE TABLE IF NOT EXISTS body_measurements (week date PRIMARY KEY, weight double precision, belly double precision, chest double precision, bicep double precision, thigh double precision, compliance integer, updated_at timestamptz)",
         ]
         for sql in statements {

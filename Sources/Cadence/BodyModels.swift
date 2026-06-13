@@ -75,7 +75,7 @@ struct Supplement: Codable, Identifiable, Hashable {
 
 struct CheckIn: Codable {
     var weight: Double? = nil
-    var sleep: Int = 5
+    var sleepHours: Double = 7.5
     var energy: Int = 5
     var mood: Int = 5
     var hunger: Int = 5
@@ -95,14 +95,14 @@ struct CheckIn: Codable {
     init() {}
 
     enum CodingKeys: String, CodingKey {
-        case weight, sleep, energy, mood, hunger, acidReflux, bloating, shoulderPain
+        case weight, sleepHours, energy, mood, hunger, acidReflux, bloating, shoulderPain
         case floor, meals, supplements, exercises, exerciseLog, warmupDone, intensity, sessionDone
     }
 
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         weight = try? c.decode(Double.self, forKey: .weight)
-        sleep = (try? c.decode(Int.self, forKey: .sleep)) ?? 5
+        sleepHours = (try? c.decode(Double.self, forKey: .sleepHours)) ?? 7.5
         energy = (try? c.decode(Int.self, forKey: .energy)) ?? 5
         mood = (try? c.decode(Int.self, forKey: .mood)) ?? 5
         hunger = (try? c.decode(Int.self, forKey: .hunger)) ?? 5

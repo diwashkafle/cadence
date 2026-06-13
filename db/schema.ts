@@ -37,7 +37,7 @@ export const trackedSites = pgTable("tracked_sites", {
 export const bodyCheckins = pgTable("body_checkins", {
   day: date("day").primaryKey(),
   weight: doublePrecision("weight"),
-  sleep: integer("sleep"),
+  sleepHours: doublePrecision("sleep_hours"),
   energy: integer("energy"),
   mood: integer("mood"),
   hunger: integer("hunger"),

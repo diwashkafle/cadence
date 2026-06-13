@@ -150,11 +150,17 @@ struct SparkLine: View {
 
 // MARK: - Reference
 
+struct SessionEditTarget: Identifiable { let id: String }
+
 struct BodyReferenceView: View {
     @EnvironmentObject var store: Store
+    @State private var editSession: SessionEditTarget?
+    @State private var editingSupplements = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            Text("Tap the pencil on a session — or Edit on supplements — to tweak your routine. Changes save instantly and sync.")
+                .font(.caption).foregroundStyle(.secondary)
             section("AC Joint Rehab — every morning, 8 min") {
                 ForEach(acRehab) { exerciseLine($0) }
                 Text("Banned for good: overhead swinging, behind-the-neck, deep dips.")
@@ -171,7 +177,16 @@ struct BodyReferenceView: View {
             }
 
             ForEach(store.data.body.sessions.filter { !$0.archived }) { s in
-                section("\(s.name) · \(s.subtitle)") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("\(s.name) · \(s.subtitle)").font(.headline)
+                        Spacer()
+                        Button { editSession = SessionEditTarget(id: s.id) } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Edit this session")
+                    }
                     if !s.warmup.isEmpty {
                         Text("Warmup").font(.caption.bold()).foregroundStyle(.secondary)
                         ForEach(s.warmup, id: \.self) { Text("• \($0)").font(.caption) }
@@ -179,6 +194,8 @@ struct BodyReferenceView: View {
                     }
                     ForEach(s.exercises) { exerciseLine($0) }
                 }
+                .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             }
 
             section("Diet by day type") {
@@ -198,7 +215,12 @@ struct BodyReferenceView: View {
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
 
-            section("Supplements") {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Supplements").font(.headline)
+                    Spacer()
+                    Button("Edit") { editingSupplements = true }.buttonStyle(.borderless)
+                }
                 ForEach(store.data.body.supplements.filter { !$0.archived }) { s in
                     VStack(alignment: .leading, spacing: 1) {
                         Text("• \(s.name) — \(s.dose), \(s.timing)")
@@ -208,6 +230,8 @@ struct BodyReferenceView: View {
                     }
                 }
             }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
             section("Monthly 36-48h fast") {
                 Text("Wednesday dinner → Friday morning. Water, black coffee, plain ginger tea, electrolytes only. Never exceed 48h.")
@@ -217,6 +241,12 @@ struct BodyReferenceView: View {
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
+        }
+        .sheet(item: $editSession) { target in
+            SessionEditorView(sessionID: target.id).environmentObject(store)
+        }
+        .sheet(isPresented: $editingSupplements) {
+            SupplementEditorView().environmentObject(store)
         }
     }
 
