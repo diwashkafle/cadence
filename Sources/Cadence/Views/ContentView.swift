@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SidebarItem: Hashable {
     case home
+    case body
     case goal(UUID)
     case tracking
     case settings
@@ -18,6 +19,8 @@ struct ContentView: View {
             List(selection: $selection) {
                 Label("Home", systemImage: "circle.grid.3x3.fill")
                     .tag(SidebarItem.home)
+                Label("Body", systemImage: "figure.strengthtraining.traditional")
+                    .tag(SidebarItem.body)
 
                 Section("Goals") {
                     ForEach(store.data.goals) { goal in
@@ -60,6 +63,8 @@ struct ContentView: View {
             switch selection {
             case .home:
                 HomeView()
+            case .body:
+                BodyView()
             case .goal(let id):
                 if let goal = store.data.goals.first(where: { $0.id == id }) {
                     GoalDetailView(goal: goal)

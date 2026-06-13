@@ -26,6 +26,8 @@ final class Store: ObservableObject {
             data = AppData()
         }
 
+        seedBodyIfNeeded()
+
         // Flush any pending debounced save before the app exits.
         NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification,

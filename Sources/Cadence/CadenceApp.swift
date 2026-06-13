@@ -19,6 +19,7 @@ struct CadenceApp: App {
                 .environmentObject(store)
                 .environmentObject(tracker)
                 .frame(minWidth: 820, minHeight: 540)
+                .preferredColorScheme(.dark)
         }
         .windowResizability(.contentMinSize)
 
