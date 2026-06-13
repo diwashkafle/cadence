@@ -145,11 +145,10 @@ struct AppData: Codable {
     var body: BodyData = BodyData()           // body-transformation module
     var cloudAutoSync: Bool = true            // push to Neon automatically
     var lastSyncedAt: Date? = nil             // last successful cloud push
-    var dataApiURL: String = ""               // Neon Data API base URL (public)
 
     enum CodingKeys: String, CodingKey {
         case goals, logs, trackedApps, trackedSites, idleThreshold, autoTrack, body
-        case cloudAutoSync, lastSyncedAt, dataApiURL
+        case cloudAutoSync, lastSyncedAt
     }
 
     init() {}
@@ -167,6 +166,5 @@ struct AppData: Codable {
         body = (try? c.decode(BodyData.self, forKey: .body)) ?? BodyData()
         cloudAutoSync = (try? c.decode(Bool.self, forKey: .cloudAutoSync)) ?? true
         lastSyncedAt = try? c.decode(Date.self, forKey: .lastSyncedAt)
-        dataApiURL = (try? c.decode(String.self, forKey: .dataApiURL)) ?? ""
     }
 }

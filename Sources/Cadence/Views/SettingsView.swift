@@ -10,8 +10,7 @@ struct SettingsView: View {
     @State private var runningApps: [TrackedApp] = []
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
-    @State private var apiURL = ""
-    @State private var apiToken = ""
+    @State private var neonURL = ""
 
     var body: some View {
         ScrollView {
@@ -25,20 +24,17 @@ struct SettingsView: View {
                         Spacer()
                         statusBadge
                     }
-                    Text("Your data auto-saves locally and pushes to Neon via the Data API. Paste the Data API URL and your access token — the token is stored in the macOS Keychain, never in a file or git.")
+                    Text("Your data auto-saves locally and pushes to your Neon database. Paste the connection string from your Neon dashboard — it's stored in the macOS Keychain, never in a file or git.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
 
-                    TextField("Data API URL — https://…neon.tech", text: $apiURL)
-                        .textFieldStyle(.roundedBorder)
-                    SecureField("Access token (Bearer JWT)", text: $apiToken)
+                    SecureField("postgresql://user:password@…neon.tech/dbname?sslmode=require", text: $neonURL)
                         .textFieldStyle(.roundedBorder)
                     HStack {
-                        Button("Save") {
-                            sync.setBaseURL(apiURL)
-                            if !apiToken.isEmpty { sync.setToken(apiToken) }
-                            apiToken = ""
+                        Button("Save connection") {
+                            sync.setConnectionString(neonURL)
+                            neonURL = ""
                         }
-                        .disabled(apiURL.isEmpty)
+                        .disabled(neonURL.isEmpty)
                         Button("Sync now") {
                             Task { await sync.sync() }
                         }
@@ -188,7 +184,6 @@ struct SettingsView: View {
         }
         .onAppear {
             runningApps = currentRunningApps()
-            apiURL = store.data.dataApiURL
         }
     }
 
