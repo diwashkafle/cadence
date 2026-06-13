@@ -1,0 +1,22 @@
+{
+  "name": "cadence-db",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Drizzle schema + migrations for the Cadence Neon Postgres database",
+  "type": "module",
+  "scripts": {
+    "push": "drizzle-kit push",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.28.0",
+    "dotenv": "^16.4.5",
+    "@types/pg": "^8.11.10"
+  }
+}

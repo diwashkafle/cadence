@@ -6,6 +6,15 @@ Package.resolved
 # Built app bundle (regenerate with ./build.sh)
 Cadence.app/
 
+# Secrets — never commit connection strings
+.env
+*.env
+neon.url
+
+# Node (db/ Drizzle project)
+node_modules/
+db/migrations/meta/_journal.json.lock
+
 # macOS
 .DS_Store
 

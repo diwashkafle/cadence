@@ -5,12 +5,14 @@ import AppKit
 struct CadenceApp: App {
     @StateObject private var store: Store
     @StateObject private var tracker: Tracker
+    @StateObject private var sync: SyncManager
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
         let s = Store()
         _store = StateObject(wrappedValue: s)
         _tracker = StateObject(wrappedValue: Tracker(store: s))
+        _sync = StateObject(wrappedValue: SyncManager(store: s))
     }
 
     var body: some Scene {
@@ -18,6 +20,7 @@ struct CadenceApp: App {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(tracker)
+                .environmentObject(sync)
                 .frame(minWidth: 820, minHeight: 540)
                 .preferredColorScheme(.dark)
         }

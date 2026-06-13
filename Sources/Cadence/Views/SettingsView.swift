@@ -4,16 +4,58 @@ import ServiceManagement
 
 struct SettingsView: View {
     @EnvironmentObject var store: Store
+    @EnvironmentObject var sync: SyncManager
     @State private var newSite = ""
     @State private var newSiteCategory: Category = .work
     @State private var runningApps: [TrackedApp] = []
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
+    @State private var neonURL = ""
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 Text("Settings").font(.largeTitle.bold())
+
+                // MARK: Cloud sync
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Cloud sync (Neon)").font(.headline)
+                        Spacer()
+                        statusBadge
+                    }
+                    Text("Your data auto-saves locally and pushes to your Neon Postgres database. Paste your connection string — it's stored in the macOS Keychain, never in a file or git.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+
+                    SecureField("postgresql://user:password@…neon.tech/dbname?sslmode=require", text: $neonURL)
+                        .textFieldStyle(.roundedBorder)
+                    HStack {
+                        Button("Save connection") {
+                            sync.setConnectionString(neonURL)
+                        }
+                        .disabled(neonURL.isEmpty)
+                        Button("Sync now") {
+                            Task { await sync.sync() }
+                        }
+                        .disabled(sync.syncing || sync.connectionString == nil)
+                        if sync.syncing { ProgressView().controlSize(.small) }
+                        Spacer()
+                    }
+                    Toggle("Sync automatically in the background", isOn: Binding(
+                        get: { store.data.cloudAutoSync },
+                        set: { store.data.cloudAutoSync = $0 }
+                    ))
+                    if let last = store.data.lastSyncedAt {
+                        Text("Last synced: \(last.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    if let err = sync.lastError {
+                        Text(err).font(.caption2).foregroundStyle(.red)
+                            .textSelection(.enabled).lineLimit(3)
+                    }
+                }
+
+                Divider()
 
                 // MARK: Apps
                 VStack(alignment: .leading, spacing: 10) {
@@ -138,6 +180,16 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .onAppear { runningApps = currentRunningApps() }
+    }
+
+    private var statusBadge: some View {
+        let color: Color = sync.syncing ? .yellow
+            : (sync.lastError != nil ? .red
+            : (sync.connectionString != nil ? Category.work.color : .gray))
+        return HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(sync.status).font(.caption).foregroundStyle(.secondary)
+        }
     }
 
     /// Three-way Off / Work / Entertainment control.

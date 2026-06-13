@@ -143,9 +143,12 @@ struct AppData: Codable {
     var idleThreshold: Int = 120              // seconds of no input before pausing
     var autoTrack: Bool = true                // tracking resumes on launch
     var body: BodyData = BodyData()           // body-transformation module
+    var cloudAutoSync: Bool = true            // push to Neon automatically
+    var lastSyncedAt: Date? = nil             // last successful cloud push
 
     enum CodingKeys: String, CodingKey {
         case goals, logs, trackedApps, trackedSites, idleThreshold, autoTrack, body
+        case cloudAutoSync, lastSyncedAt
     }
 
     init() {}
@@ -161,5 +164,7 @@ struct AppData: Codable {
         idleThreshold = (try? c.decode(Int.self, forKey: .idleThreshold)) ?? 120
         autoTrack = (try? c.decode(Bool.self, forKey: .autoTrack)) ?? true
         body = (try? c.decode(BodyData.self, forKey: .body)) ?? BodyData()
+        cloudAutoSync = (try? c.decode(Bool.self, forKey: .cloudAutoSync)) ?? true
+        lastSyncedAt = try? c.decode(Date.self, forKey: .lastSyncedAt)
     }
 }
