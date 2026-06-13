@@ -65,6 +65,57 @@ struct SessionEditorView: View {
     }
 }
 
+// MARK: - Diet editor (day types + meals)
+
+struct DietEditorView: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Edit diet").font(.headline)
+                Spacer()
+                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+            }
+            .padding()
+
+            Form {
+                ForEach($store.data.body.diet) { $plan in
+                    Section(plan.type.capitalized) {
+                        TextField("Note", text: $plan.note).font(.caption)
+                        ForEach($plan.meals) { $meal in
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextField("Meal name", text: $meal.name).font(.body.bold())
+                                TextField("Time", text: $meal.time)
+                                TextField("Foods", text: $meal.foods, axis: .vertical).font(.caption)
+                                HStack {
+                                    TextField("kcal", value: $meal.kcal, format: .number).frame(width: 70)
+                                    TextField("protein g", value: $meal.protein, format: .number).frame(width: 80)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                        .onDelete { offsets in
+                            if let i = store.data.body.diet.firstIndex(where: { $0.id == plan.id }) {
+                                store.data.body.diet[i].meals.remove(atOffsets: offsets)
+                            }
+                        }
+                        Button {
+                            if let i = store.data.body.diet.firstIndex(where: { $0.id == plan.id }) {
+                                store.data.body.diet[i].meals.append(
+                                    MealItem(id: UUID().uuidString, name: "New meal", time: "", foods: "", kcal: 0, protein: 0))
+                            }
+                        } label: { Label("Add meal", systemImage: "plus") }
+                    }
+                }
+            }
+            .formStyle(.grouped)
+        }
+        .frame(width: 500, height: 600)
+    }
+}
+
 // MARK: - Supplement editor
 
 struct SupplementEditorView: View {

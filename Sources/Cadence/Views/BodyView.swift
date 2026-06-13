@@ -135,9 +135,19 @@ struct BodyTodayView: View {
     // MARK: diet
 
     private var dietCard: some View {
-        card("Diet — \(dayType.label) day · \(dayType.kcal) kcal") {
-            ForEach([1, 2, 3], id: \.self) { n in
-                Toggle("Meal \(n)", isOn: mealBind(n))
+        let plan = store.data.body.plan(dayType)
+        return card("Diet — \(dayType.label) day · \(dayType.kcal) kcal") {
+            if let plan {
+                ForEach(Array(plan.meals.enumerated()), id: \.element.id) { i, meal in
+                    Toggle(isOn: mealBind(i + 1)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("\(meal.name) · \(meal.time)")
+                            Text(meal.foods).font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } else {
+                ForEach([1, 2, 3], id: \.self) { n in Toggle("Meal \(n)", isOn: mealBind(n)) }
             }
         }
     }

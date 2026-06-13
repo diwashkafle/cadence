@@ -166,25 +166,23 @@ let acRehab: [Exercise] = [
     .init(id: "trap-shrug-rehab", name: "Light trap shrugs", setsReps: "15 × 2", notes: "5kg only, hold 2 sec"),
 ]
 
-// MARK: - Diet reference (constant)
+// MARK: - Diet (editable, persisted)
 
-struct MealInfo: Identifiable { let id = UUID(); let name: String; let time: String; let foods: String; let kcal: Int; let protein: Int }
-struct DayTypeInfo { let type: DietDayType; let note: String; let protein: Int; let meals: [MealInfo] }
+struct MealItem: Codable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var time: String
+    var foods: String
+    var kcal: Int
+    var protein: Int
+}
 
-let dietReference: [DayTypeInfo] = [
-    .init(type: .low, note: "Tue / Thu / Sat — no rice, minimal carbs", protein: 123, meals: [
-        .init(name: "Meal 1", time: "11:00 AM", foods: "4 eggs + 50g soya (air fried) + 100g spinach + veg + 5g ghee + lemon", kcal: 590, protein: 55),
-        .init(name: "Meal 2", time: "3:30 PM", foods: "100g dry mung dal + 135g curd + 30g pumpkin seeds + ½ tsp honey", kcal: 627, protein: 38),
-        .init(name: "Meal 3", time: "7:30 PM", foods: "50g soya (air fried) + 25g whey in water", kcal: 283, protein: 39),
-    ]),
-    .init(type: .standard, note: "Mon / Wed / Fri — Low day + rice, banana, milk", protein: 132, meals: [
-        .init(name: "Meal 1", time: "11:00 AM", foods: "Low Meal 1 + 100g cooked white rice", kcal: 720, protein: 57),
-        .init(name: "Meal 2", time: "3:30 PM", foods: "Low Meal 2 + 1 banana", kcal: 716, protein: 38),
-        .init(name: "Meal 3", time: "7:30 PM", foods: "50g soya + 25g whey in 100ml whole milk", kcal: 345, protein: 39),
-    ]),
-    .init(type: .refeed, note: "Sunday — higher carbs, refeed", protein: 130, meals: [
-        .init(name: "Meal 1", time: "11:00 AM", foods: "Low Meal 1 + 150-180g cooked rice", kcal: 800, protein: 57),
-        .init(name: "Meal 2", time: "3:30 PM", foods: "150g curd + seasonal fruit + seeds + mung", kcal: 720, protein: 38),
-        .init(name: "Meal 3", time: "7:30 PM", foods: "Whey in 150ml milk + optional air-fried potato", kcal: 380, protein: 35),
-    ]),
-]
+struct DayTypePlan: Codable, Identifiable, Hashable {
+    var type: String        // DietDayType raw value
+    var note: String
+    var meals: [MealItem]
+    var id: String { type }
+
+    var totalKcal: Int { meals.reduce(0) { $0 + $1.kcal } }
+    var totalProtein: Int { meals.reduce(0) { $0 + $1.protein } }
+}

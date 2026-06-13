@@ -156,6 +156,7 @@ struct BodyReferenceView: View {
     @EnvironmentObject var store: Store
     @State private var editSession: SessionEditTarget?
     @State private var editingSupplements = false
+    @State private var editingDiet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -198,22 +199,29 @@ struct BodyReferenceView: View {
                 .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             }
 
-            section("Diet by day type") {
-                ForEach(dietReference, id: \.type.rawValue) { info in
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Diet by day type").font(.headline)
+                    Spacer()
+                    Button("Edit") { editingDiet = true }.buttonStyle(.borderless)
+                }
+                ForEach(store.data.body.diet) { plan in
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("\(info.type.label) · \(info.type.kcal) kcal · ~\(info.protein)g protein")
+                        Text("\(plan.type.capitalized) · ~\(plan.totalKcal) kcal · ~\(plan.totalProtein)g protein")
                             .font(.subheadline.bold())
-                        Text(info.note).font(.caption2).foregroundStyle(.secondary)
-                        ForEach(info.meals) { m in
+                        Text(plan.note).font(.caption2).foregroundStyle(.secondary)
+                        ForEach(plan.meals) { m in
                             Text("• \(m.name) (\(m.time)) — \(m.foods) · \(m.kcal) kcal / \(m.protein)g")
                                 .font(.caption)
                         }
                     }
                     .padding(.bottom, 6)
                 }
-                Text("Weekly avg ~1,570 kcal. Protein every meal is the floor rule. Stop eating by 7:30–8 PM → 15-16h daily fast.")
+                Text("Protein every meal is the floor rule. Stop eating by 7:30–8 PM → 15-16h daily fast.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -247,6 +255,9 @@ struct BodyReferenceView: View {
         }
         .sheet(isPresented: $editingSupplements) {
             SupplementEditorView().environmentObject(store)
+        }
+        .sheet(isPresented: $editingDiet) {
+            DietEditorView().environmentObject(store)
         }
     }
 

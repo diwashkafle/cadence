@@ -8,12 +8,13 @@ struct BodyData: Codable {
     var measurements: [String: Measurement] = [:] // weekKey (Sunday dayKey) -> Measurement
     var sessions: [SessionTemplate] = []
     var supplements: [Supplement] = []
+    var diet: [DayTypePlan] = []
     var lastFast: Date? = nil
 
     init() {}
 
     enum CodingKeys: String, CodingKey {
-        case didSeed, checkIns, measurements, sessions, supplements, lastFast
+        case didSeed, checkIns, measurements, sessions, supplements, diet, lastFast
     }
 
     init(from d: Decoder) throws {
@@ -23,7 +24,12 @@ struct BodyData: Codable {
         measurements = (try? c.decode([String: Measurement].self, forKey: .measurements)) ?? [:]
         sessions = (try? c.decode([SessionTemplate].self, forKey: .sessions)) ?? []
         supplements = (try? c.decode([Supplement].self, forKey: .supplements)) ?? []
+        diet = (try? c.decode([DayTypePlan].self, forKey: .diet)) ?? []
         lastFast = try? c.decode(Date.self, forKey: .lastFast)
+    }
+
+    func plan(_ type: DietDayType) -> DayTypePlan? {
+        diet.first { $0.type == type.rawValue }
     }
 
     func session(_ key: SessionKey) -> SessionTemplate? {
@@ -134,6 +140,26 @@ extension BodyData {
 
         return ([legs, pull, legsPull, mobility, cardio, rest], supplements)
     }
+
+    static func seededDiet() -> [DayTypePlan] {
+        [
+            DayTypePlan(type: DietDayType.low.rawValue, note: "Tue / Thu / Sat — no rice, minimal carbs", meals: [
+                .init(id: "low-1", name: "Meal 1", time: "11:00 AM", foods: "4 eggs + 50g soya (air fried) + 100g spinach + veg + 5g ghee + lemon", kcal: 590, protein: 55),
+                .init(id: "low-2", name: "Meal 2", time: "3:30 PM", foods: "100g dry mung dal + 135g curd + 30g pumpkin seeds + ½ tsp honey", kcal: 627, protein: 38),
+                .init(id: "low-3", name: "Meal 3", time: "7:30 PM", foods: "50g soya (air fried) + 25g whey in water", kcal: 283, protein: 39),
+            ]),
+            DayTypePlan(type: DietDayType.standard.rawValue, note: "Mon / Wed / Fri — Low day + rice, banana, milk", meals: [
+                .init(id: "std-1", name: "Meal 1", time: "11:00 AM", foods: "Low Meal 1 + 100g cooked white rice", kcal: 720, protein: 57),
+                .init(id: "std-2", name: "Meal 2", time: "3:30 PM", foods: "Low Meal 2 + 1 banana", kcal: 716, protein: 38),
+                .init(id: "std-3", name: "Meal 3", time: "7:30 PM", foods: "50g soya + 25g whey in 100ml whole milk", kcal: 345, protein: 39),
+            ]),
+            DayTypePlan(type: DietDayType.refeed.rawValue, note: "Sunday — higher carbs, refeed", meals: [
+                .init(id: "ref-1", name: "Meal 1", time: "11:00 AM", foods: "Low Meal 1 + 150-180g cooked rice", kcal: 800, protein: 57),
+                .init(id: "ref-2", name: "Meal 2", time: "3:30 PM", foods: "150g curd + seasonal fruit + seeds + mung", kcal: 720, protein: 38),
+                .init(id: "ref-3", name: "Meal 3", time: "7:30 PM", foods: "Whey in 150ml milk + optional air-fried potato", kcal: 380, protein: 35),
+            ]),
+        ]
+    }
 }
 
 // MARK: - Store helpers
@@ -144,11 +170,16 @@ extension Store {
     }
 
     func seedBodyIfNeeded() {
-        guard !data.body.didSeed else { return }
-        let lib = BodyData.seededLibrary()
-        data.body.sessions = lib.sessions
-        data.body.supplements = lib.supplements
-        data.body.didSeed = true
+        if !data.body.didSeed {
+            let lib = BodyData.seededLibrary()
+            data.body.sessions = lib.sessions
+            data.body.supplements = lib.supplements
+            data.body.didSeed = true
+        }
+        // Seed independently of didSeed so existing installs gain the editable diet.
+        if data.body.diet.isEmpty {
+            data.body.diet = BodyData.seededDiet()
+        }
     }
 
     /// Compliance proxy: fraction of floor + session + meals done today (0…10).
