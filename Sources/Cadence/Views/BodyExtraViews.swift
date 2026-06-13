@@ -40,7 +40,7 @@ struct BodyWeekView: View {
                             .fill(done ? Category.work.color : Color.gray.opacity(0.15))
                             .frame(width: 26, height: 26)
                             .overlay(Circle().stroke(Color.accentColor, lineWidth: isToday ? 2 : 0))
-                        Text(BodySchedule.sessionKey(for: day).rawValue.prefix(4))
+                        Text(store.scheduledSessionKey(for: day).rawValue.prefix(4))
                             .font(.system(size: 8)).foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity)
@@ -160,8 +160,10 @@ struct BodyReferenceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            Text("Tap the pencil on a session — or Edit on supplements — to tweak your routine. Changes save instantly and sync.")
+            Text("Set which session + diet type each weekday uses below — this drives the Today and Week tabs. Tap a pencil to edit a session; Edit on supplements/diet. Changes save instantly.")
                 .font(.caption).foregroundStyle(.secondary)
+
+            scheduleSection
             section("AC Joint Rehab — every morning, 8 min") {
                 ForEach(acRehab) { exerciseLine($0) }
                 Text("Banned for good: overhead swinging, behind-the-neck, deep dips.")
@@ -206,10 +208,13 @@ struct BodyReferenceView: View {
                     Button("Edit") { editingDiet = true }.buttonStyle(.borderless)
                 }
                 ForEach(store.data.body.diet) { plan in
+                    let days = store.daysUsing(dietType: DietDayType(rawValue: plan.type) ?? .low)
+                        .map { shortWeekday($0) }.joined(separator: ", ")
                     VStack(alignment: .leading, spacing: 3) {
                         Text("\(plan.type.capitalized) · ~\(plan.totalKcal) kcal · ~\(plan.totalProtein)g protein")
                             .font(.subheadline.bold())
-                        Text(plan.note).font(.caption2).foregroundStyle(.secondary)
+                        Text(days.isEmpty ? plan.note : "Used: \(days)")
+                            .font(.caption2).foregroundStyle(.secondary)
                         ForEach(plan.meals) { m in
                             Text("• \(m.name) (\(m.time)) — \(m.foods) · \(m.kcal) kcal / \(m.protein)g")
                                 .font(.caption)
@@ -259,6 +264,39 @@ struct BodyReferenceView: View {
         .sheet(isPresented: $editingDiet) {
             DietEditorView().environmentObject(store)
         }
+    }
+
+    private var scheduleSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Weekly schedule").font(.headline)
+            ForEach($store.data.body.schedule) { $plan in
+                HStack(spacing: 8) {
+                    Text(weekdayName(plan.weekday)).frame(width: 92, alignment: .leading)
+                    Picker("", selection: $plan.sessionKey) {
+                        ForEach(store.data.body.sessions.filter { !$0.archived }) { s in
+                            Text(s.name).tag(s.id)
+                        }
+                    }
+                    .labelsHidden()
+                    Picker("", selection: $plan.dietType) {
+                        ForEach(DietDayType.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
+                    }
+                    .labelsHidden().frame(width: 130)
+                }
+            }
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func weekdayName(_ weekday: Int) -> String {
+        let s = DateFormatter().weekdaySymbols ?? []
+        return (weekday >= 1 && weekday <= s.count) ? s[weekday - 1] : "Day \(weekday)"
+    }
+
+    private func shortWeekday(_ weekday: Int) -> String {
+        let s = DateFormatter().shortWeekdaySymbols ?? []
+        return (weekday >= 1 && weekday <= s.count) ? s[weekday - 1] : "\(weekday)"
     }
 
     private func section<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {

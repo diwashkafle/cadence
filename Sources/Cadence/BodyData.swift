@@ -9,12 +9,13 @@ struct BodyData: Codable {
     var sessions: [SessionTemplate] = []
     var supplements: [Supplement] = []
     var diet: [DayTypePlan] = []
+    var schedule: [WeekdayPlan] = []
     var lastFast: Date? = nil
 
     init() {}
 
     enum CodingKeys: String, CodingKey {
-        case didSeed, checkIns, measurements, sessions, supplements, diet, lastFast
+        case didSeed, checkIns, measurements, sessions, supplements, diet, schedule, lastFast
     }
 
     init(from d: Decoder) throws {
@@ -25,6 +26,7 @@ struct BodyData: Codable {
         sessions = (try? c.decode([SessionTemplate].self, forKey: .sessions)) ?? []
         supplements = (try? c.decode([Supplement].self, forKey: .supplements)) ?? []
         diet = (try? c.decode([DayTypePlan].self, forKey: .diet)) ?? []
+        schedule = (try? c.decode([WeekdayPlan].self, forKey: .schedule)) ?? []
         lastFast = try? c.decode(Date.self, forKey: .lastFast)
     }
 
@@ -141,6 +143,18 @@ extension BodyData {
         return ([legs, pull, legsPull, mobility, cardio, rest], supplements)
     }
 
+    static func seededSchedule() -> [WeekdayPlan] {
+        [
+            .init(weekday: 1, sessionKey: "rest",      dietType: "refeed"),    // Sun
+            .init(weekday: 2, sessionKey: "legs",      dietType: "standard"),  // Mon
+            .init(weekday: 3, sessionKey: "mobility",  dietType: "low"),       // Tue
+            .init(weekday: 4, sessionKey: "pull",      dietType: "standard"),  // Wed
+            .init(weekday: 5, sessionKey: "cardio",    dietType: "low"),       // Thu
+            .init(weekday: 6, sessionKey: "legs-pull", dietType: "standard"),  // Fri
+            .init(weekday: 7, sessionKey: "mobility",  dietType: "low"),       // Sat
+        ]
+    }
+
     static func seededDiet() -> [DayTypePlan] {
         [
             DayTypePlan(type: DietDayType.low.rawValue, note: "Tue / Thu / Sat — no rice, minimal carbs", meals: [
@@ -176,10 +190,34 @@ extension Store {
             data.body.supplements = lib.supplements
             data.body.didSeed = true
         }
-        // Seed independently of didSeed so existing installs gain the editable diet.
+        // Seed independently of didSeed so existing installs gain these too.
         if data.body.diet.isEmpty {
             data.body.diet = BodyData.seededDiet()
         }
+        if data.body.schedule.isEmpty {
+            data.body.schedule = BodyData.seededSchedule()
+        }
+    }
+
+    /// The session assigned to a date by the editable schedule (falls back to defaults).
+    func scheduledSessionKey(for date: Date) -> SessionKey {
+        let wd = Calendar.current.component(.weekday, from: date)
+        if let p = data.body.schedule.first(where: { $0.weekday == wd }),
+           let k = SessionKey(rawValue: p.sessionKey) { return k }
+        return BodySchedule.sessionKey(for: date)
+    }
+
+    /// The diet day type assigned to a date by the editable schedule.
+    func scheduledDietType(for date: Date) -> DietDayType {
+        let wd = Calendar.current.component(.weekday, from: date)
+        if let p = data.body.schedule.first(where: { $0.weekday == wd }),
+           let t = DietDayType(rawValue: p.dietType) { return t }
+        return BodySchedule.dayType(for: date)
+    }
+
+    /// Short weekday names (Sun…Sat) where a given diet type is scheduled.
+    func daysUsing(dietType: DietDayType) -> [Int] {
+        data.body.schedule.filter { $0.dietType == dietType.rawValue }.map { $0.weekday }.sorted()
     }
 
     /// Compliance proxy: fraction of floor + session + meals done today (0…10).

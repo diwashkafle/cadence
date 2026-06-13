@@ -38,9 +38,9 @@ struct BodyTodayView: View {
 
     private var key: String { Date().dayKey }
     private var today: Date { Date() }
-    private var sessionKey: SessionKey { BodySchedule.sessionKey(for: today) }
+    private var sessionKey: SessionKey { store.scheduledSessionKey(for: today) }
     private var session: SessionTemplate? { store.data.body.session(sessionKey) }
-    private var dayType: DietDayType { BodySchedule.dayType(for: today) }
+    private var dayType: DietDayType { store.scheduledDietType(for: today) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {

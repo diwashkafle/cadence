@@ -6,10 +6,18 @@ enum SessionKey: String, Codable, CaseIterable {
     case legs, pull, legsPull = "legs-pull", mobility, cardio, rest
 }
 
-enum DietDayType: String, Codable {
+enum DietDayType: String, Codable, CaseIterable {
     case low, standard, refeed
     var kcal: Int { self == .low ? 1350 : (self == .standard ? 1700 : 1900) }
     var label: String { rawValue.capitalized }
+}
+
+/// One weekday's assignment, editable by the user. weekday: 1=Sun … 7=Sat.
+struct WeekdayPlan: Codable, Identifiable, Hashable {
+    var weekday: Int
+    var sessionKey: String   // SessionKey raw value
+    var dietType: String     // DietDayType raw value
+    var id: Int { weekday }
 }
 
 enum BodySchedule {
