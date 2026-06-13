@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Schedule (weekly split → session type, day type, calories)
 
 enum SessionKey: String, Codable, CaseIterable {
-    case legs, pull, legsPull = "legs-pull", mobility, cardio, rest
+    case legs, pull, legsPull = "legs-pull", push, mobility, cardio, rest
 }
 
 enum DietDayType: String, Codable, CaseIterable {

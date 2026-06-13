@@ -140,7 +140,27 @@ extension BodyData {
             .init(id: "minox-pm", name: "Minoxidil (PM)", dose: "0.5ml", timing: "Night before bed", notes: "Skip on derma-stamp day", nightly: true),
         ]
 
-        return ([legs, pull, legsPull, mobility, cardio, rest], supplements)
+        return ([legs, pull, legsPull, seededPush(), mobility, cardio, rest], supplements)
+    }
+
+    /// Push day — suspended while the AC joint heals. Notes follow the return
+    /// order: bands first, overhead/laterals last (8+ weeks pain-free).
+    static func seededPush() -> SessionTemplate {
+        SessionTemplate(
+            id: SessionKey.push.rawValue, name: "Push + Core", subtitle: "Weights · when shoulder healed",
+            fasted: false,
+            warmup: ["Band pull-aparts — 15", "Band external rotation — 12/arm",
+                     "Wall slides — 10 slow", "Scapular push-ups — 10"],
+            exercises: [
+                .init(id: "band-chest-press", name: "Band chest press / push-aparts", setsReps: "3 × 15", notes: "Return week 1 — bands only"),
+                .init(id: "floor-press", name: "DB Floor Press", setsReps: "4 × 8-10", notes: "Return week 2 — lightest DBs"),
+                .init(id: "db-bench", name: "DB Bench Press", setsReps: "4 × 8-10", notes: "Return week 3 — start ~50% if zero pain"),
+                .init(id: "incline-db", name: "Incline DB Press", setsReps: "3 × 10", notes: "Add once bench is pain-free"),
+                .init(id: "ohp", name: "DB Overhead Press", setsReps: "3 × 8-10", notes: "LAST to return — 8+ weeks zero pain under load"),
+                .init(id: "lateral-raise", name: "DB Lateral Raise", setsReps: "3 × 12-15", notes: "LAST to return — light, no swinging"),
+                .init(id: "triceps-ext", name: "DB Triceps Extension", setsReps: "3 × 12", notes: "Keep elbows happy"),
+                .init(id: "plank-push", name: "Plank", setsReps: "3 × 45-60 sec", notes: "Full tension"),
+            ])
     }
 
     static func seededSchedule() -> [WeekdayPlan] {
@@ -193,6 +213,10 @@ extension Store {
         // Seed independently of didSeed so existing installs gain these too.
         if data.body.diet.isEmpty {
             data.body.diet = BodyData.seededDiet()
+        }
+        // Add the Push session to existing installs (kept out of the schedule).
+        if !data.body.sessions.contains(where: { $0.id == SessionKey.push.rawValue }) {
+            data.body.sessions.append(BodyData.seededPush())
         }
         if data.body.schedule.isEmpty {
             data.body.schedule = BodyData.seededSchedule()
