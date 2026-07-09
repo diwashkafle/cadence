@@ -106,12 +106,11 @@ final class SyncManager: ObservableObject {
             let goals: [Goal]
             let trackedApps: [TrackedApp]
             let trackedSites: [TrackedSite]
-            let body: BodyData
             let idleThreshold: Int
             let cloudAutoSync: Bool
         }
         let snap = Snap(goals: d.goals, trackedApps: d.trackedApps, trackedSites: d.trackedSites,
-                        body: d.body, idleThreshold: d.idleThreshold, cloudAutoSync: d.cloudAutoSync)
+                        idleThreshold: d.idleThreshold, cloudAutoSync: d.cloudAutoSync)
         let enc = JSONEncoder(); enc.outputFormatting = [.sortedKeys]
         return try? enc.encode(snap)
     }
@@ -181,38 +180,6 @@ final class SyncManager: ObservableObject {
                 """, logger: logger)
         }
 
-        for (day, c) in data.body.checkIns {
-            try await conn.query("""
-                INSERT INTO body_checkins
-                  (day, weight, sleep_hours, energy, mood, hunger, acid_reflux, bloating, shoulder_pain,
-                   floor, meals, supplements, exercises, exercise_log, warmup_done, intensity, session_done, updated_at)
-                VALUES
-                  (\(day)::date, \(c.weight), \(c.sleepHours), \(c.energy), \(c.mood), \(c.hunger),
-                   \(c.acidReflux), \(c.bloating), \(c.shoulderPain),
-                   \(jsonArray(c.floor))::jsonb, \(jsonIntArray(c.meals))::jsonb, \(jsonArray(c.supplements))::jsonb,
-                   \(jsonArray(c.exercises))::jsonb, \(jsonString(c.exerciseLog))::jsonb,
-                   \(c.warmupDone), \(c.intensity), \(c.sessionDone), now())
-                ON CONFLICT (day) DO UPDATE SET
-                  weight = EXCLUDED.weight, sleep_hours = EXCLUDED.sleep_hours, energy = EXCLUDED.energy,
-                  mood = EXCLUDED.mood, hunger = EXCLUDED.hunger, acid_reflux = EXCLUDED.acid_reflux,
-                  bloating = EXCLUDED.bloating, shoulder_pain = EXCLUDED.shoulder_pain,
-                  floor = EXCLUDED.floor, meals = EXCLUDED.meals, supplements = EXCLUDED.supplements,
-                  exercises = EXCLUDED.exercises, exercise_log = EXCLUDED.exercise_log,
-                  warmup_done = EXCLUDED.warmup_done, intensity = EXCLUDED.intensity,
-                  session_done = EXCLUDED.session_done, updated_at = now()
-                """, logger: logger)
-        }
-
-        for (week, m) in data.body.measurements {
-            try await conn.query("""
-                INSERT INTO body_measurements (week, weight, belly, chest, bicep, thigh, compliance, updated_at)
-                VALUES (\(week)::date, \(m.weight), \(m.belly), \(m.chest), \(m.bicep), \(m.thigh), \(m.compliance), now())
-                ON CONFLICT (week) DO UPDATE SET
-                  weight = EXCLUDED.weight, belly = EXCLUDED.belly, chest = EXCLUDED.chest,
-                  bicep = EXCLUDED.bicep, thigh = EXCLUDED.thigh, compliance = EXCLUDED.compliance,
-                  updated_at = now()
-                """, logger: logger)
-        }
     }
 
     nonisolated private static func ensureSchema(_ conn: PostgresConnection, logger: Logger) async throws {
@@ -221,8 +188,6 @@ final class SyncManager: ObservableObject {
             "CREATE TABLE IF NOT EXISTS day_logs (day date PRIMARY KEY, work integer, entertainment integer, apps jsonb, hours jsonb, updated_at timestamptz)",
             "CREATE TABLE IF NOT EXISTS tracked_apps (bundle_id text PRIMARY KEY, name text, category text, updated_at timestamptz)",
             "CREATE TABLE IF NOT EXISTS tracked_sites (host text PRIMARY KEY, category text, updated_at timestamptz)",
-            "CREATE TABLE IF NOT EXISTS body_checkins (day date PRIMARY KEY, weight double precision, sleep_hours double precision, energy integer, mood integer, hunger integer, acid_reflux boolean, bloating boolean, shoulder_pain text, floor jsonb, meals jsonb, supplements jsonb, exercises jsonb, exercise_log jsonb, warmup_done boolean, intensity text, session_done boolean, updated_at timestamptz)",
-            "CREATE TABLE IF NOT EXISTS body_measurements (week date PRIMARY KEY, weight double precision, belly double precision, chest double precision, bicep double precision, thigh double precision, compliance integer, updated_at timestamptz)",
         ]
         for sql in statements {
             try await conn.query(PostgresQuery(unsafeSQL: sql), logger: logger)
@@ -233,14 +198,5 @@ final class SyncManager: ObservableObject {
 
     nonisolated private static func jsonString(_ dict: [String: Int]) -> String {
         (try? JSONSerialization.data(withJSONObject: dict)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-    }
-    nonisolated private static func jsonString(_ dict: [String: String]) -> String {
-        (try? JSONSerialization.data(withJSONObject: dict)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-    }
-    nonisolated private static func jsonArray(_ set: Set<String>) -> String {
-        (try? JSONSerialization.data(withJSONObject: Array(set))).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
-    }
-    nonisolated private static func jsonIntArray(_ set: Set<Int>) -> String {
-        (try? JSONSerialization.data(withJSONObject: Array(set))).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
     }
 }
